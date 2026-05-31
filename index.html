@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Sticker album tracker</title>
+	<link rel="icon" href="icon.png">
+	<meta content="width=device-width,initial-scale=1 name=viewport">
+	<link rel="stylesheet" href="main.css">
+</head>
+<body>
+	<script>if (localStorage.getItem('login')) { location.href = 'collection.html'; }</script>
+	<h2>Sticker album tracker</h2>
+	<form id="login-form">
+		<p>
+			Log into an existing account:
+		</p>
+		<input type="text" id="login-id" maxlength="100" placeholder="Login ID">
+		<input type="submit" value="Login" id="login-button">
+		<p id="login-error" class="error"></p>
+	</form>
+	<hr>
+	<form id="register-form">
+		<p>
+			To make a new account, enter a "Login ID" below. You will use this to sign in
+			(like a combined username and password).
+		</p>
+		<ul>
+			<li><b>Don't use your password for some other website as a Login ID. It will not be stored securely.</b></li>
+			<li>Don't include private/personal information.</li>
+			<li>Don't make it too common/short, to stop other people from logging into your account by mistake.</li>
+		</ul>
+		<input type="text" id="register-id" maxlength="100" placeholder="Login ID">
+		<input type="submit" value="Register" id="register-button">
+		<p id="register-error" class="error"></p>
+	</form>
+	<script>
+const SERVER_URL = 'https://stickeralbumsrv.pommicket.com';
+const MIN_LOGIN_LEN = 4;
+const MAX_LOGIN_LEN = 100;
+const LOGIN_LEN_ERROR = `Login ID must be ${MIN_LOGIN_LEN}-${MAX_LOGIN_LEN} characters long.`;
+const loginID = document.getElementById("login-id");
+const registerID = document.getElementById("register-id");
+const loginForm = document.getElementById("login-form");
+const registerForm = document.getElementById("register-form");
+const loginButton = document.getElementById("login-button");
+const registerButton = document.getElementById("register-button");
+const loginError = document.getElementById("login-error");
+const registerError = document.getElementById("register-error");
+const errSymbol = Symbol();
+
+function startSubmit() {
+	loginButton.disabled = true;
+	registerButton.disabled = true;
+	loginError.textContent = '';
+	registerError.textContent = '';	
+}
+
+function submitError(which, err) {
+	which.textContent = err;
+	loginButton.disabled = false;
+	registerButton.disabled = false;	
+}
+
+function makeError(e) {
+	let result = {};
+	result[errSymbol] = e;
+	return result;
+}
+
+registerForm.addEventListener('submit', async e => {
+	e.preventDefault();
+	startSubmit();
+	const id = registerID.value;
+	if (id.length < MIN_LOGIN_LEN || id.length > MAX_LOGIN_LEN) {
+		return submitError(registerError, LOGIN_LEN_ERROR);
+	}
+	const utf8 = new TextEncoder().encode(id);
+	const body = new Uint8Array(utf8.length + 2);
+	body[0] = 'c'.charCodeAt(0);
+	body.set(utf8, 1);
+	body[body.length - 1] = 0x7f;
+	let result = await fetch(SERVER_URL, {
+		method: 'POST',
+		body
+	}).catch(makeError);
+	if (errSymbol in result) {
+		submitError(registerError, result[errSymbol]);
+		return;
+	}
+	if (!result.ok) {
+		let errorMessage = 'Error ' + result.status + ': ' + await result.text().catch((e) => e);
+		submitError(registerError, errorMessage);
+		return;
+	}
+	localStorage.setItem('login', id);
+	location.href = 'collection.html';
+});
+loginForm.addEventListener('submit', async e => {
+	e.preventDefault();
+	startSubmit();
+	const id = loginID.value;
+	if (id.length < MIN_LOGIN_LEN || id.length > MAX_LOGIN_LEN) {
+		return submitError(loginError, LOGIN_LEN_ERROR);
+	}
+	const utf8 = new TextEncoder().encode(id);
+	const body = new Uint8Array(utf8.length + 2);
+	body[0] = 'r'.charCodeAt(0);
+	body.set(utf8, 1);
+	body[body.length - 1] = 0x7f;
+	let result = await fetch(SERVER_URL, {
+		method: 'POST',
+		body
+	}).catch(makeError);
+	if (errSymbol in result) {
+		submitError(registerError, result[errSymbol]);
+		return;
+	}
+	if (!result.ok) {
+		let errorMessage = 'Error ' + result.status + ': ' + await result.text().catch((e) => e);
+		submitError(registerError, errorMessage);
+		return;
+	}
+	localStorage.setItem('login', id);
+	location.href = 'collection.html';
+});
+	</script>
+</body>
+</html>

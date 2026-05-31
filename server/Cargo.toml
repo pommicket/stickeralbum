@@ -1,0 +1,10 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.52.3", features = ["rt", "macros", "rt-multi-thread", "net", "io-util", "sync", "time", "process"] }
+tokio-rusqlite = "0.7.0"
+rusqlite = "0.37.0"
+getrandom = "0.4.2"

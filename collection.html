@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Sticker album tracker</title>
+	<link rel="icon" href="icon.png">
+	<meta content="width=device-width,initial-scale=1 name=viewport">
+	<link rel="stylesheet" href="main.css">
+</head>
+<body>
+	<script>
+	const id = localStorage.getItem('login');
+	if (!id) { location.href = 'index.html'; }
+	</script>
+	<form id="logout-form"><input type="submit" value="Log out"></form>
+	<template id="sticker-template"><div class="sticker"><b
+			class="sticker-name"></b>: <span class="sticker-status"></span><br>
+			<button class="add">+</button>
+			<button class="sub">−</button
+		></div
+	></template>
+	<div id="loading">Loading...</div>
+	<div id="error" class="error"></div>
+	<div id="main"></div>
+<script>
+const SERVER_URL = 'https://stickeralbumsrv.pommicket.com';
+const SAVE_INTERVAL = 5000;
+let errorTimeout;
+
+function showError(e) {
+		document.getElementById('error').textContent = e;
+		if (errorTimeout !== undefined) {
+			clearTimeout(errorTimeout);
+		}
+		errorTimeout = setTimeout(() => {
+			document.getElementById('error').textContent = '';
+		}, 10000);
+}
+async function getDataInner() {
+	getting = true;
+	const utf8 = new TextEncoder().encode(id);
+	const body = new Uint8Array(utf8.length + 2);
+	body[0] = 'r'.charCodeAt(0);
+	body.set(utf8, 1);
+	body[body.length - 1] = 0x7f;
+	let response = await fetch(SERVER_URL, {
+		method: 'POST',
+		body
+	});
+	if (!response.ok) {
+		throw `Error ${response.status}: ${await response.text()}`;
+	}
+	let bytes = await response.bytes();
+	return bytes;
+}
+let getting = false;
+async function getData() {
+	getting = true;
+	try {
+		return await getDataInner();
+	} catch (e) {
+		showError(e);
+		throw e;
+	} finally {
+		getting = false;
+	}
+}
+function updateData(newData) {
+	for (let sticker of document.querySelectorAll('.sticker')) {
+		let number = Number(sticker.dataset.number);
+		let count = Math.min(99, newData[number]);
+		// still include pending changes
+		let newCount = count + Number(sticker.dataset.count) - Number(sticker.dataset.countSync);
+		setCount(sticker, newCount);
+		sticker.dataset.startCount = count; // NOT newCount
+	}
+}
+async function saveDataInner() {
+	const changes = [];
+	for (let sticker of document.querySelectorAll('.sticker')) {
+		let id = Number(sticker.dataset.number);
+		let delta = sticker.dataset.countSync - sticker.dataset.startCount;
+		if (delta) {
+			changes.push(id & 255, id >> 8, delta & 0xff);
+		}
+	}
+	if (changes.length === 0) {
+		return;
+	}
+	const utf8 = new TextEncoder().encode(id);
+	const body = new Uint8Array(utf8.length + changes.length + 3);
+	body[0] = 'w'.charCodeAt(0);
+	body.set(utf8, 1);
+	body.set([1], utf8.length + 1);
+	body.set(changes, utf8.length + 2);
+	body[body.length - 1] = 0x7f;
+	let response = await fetch(SERVER_URL, {
+		method: 'POST',
+		body,
+		keepalive: true,
+	});
+	if (response.ok) {
+		let bytes = await response.bytes();
+		saving = false;
+		updateData(bytes);
+	} else {
+		throw `Error ${response.status}: ${await response.text()}`;
+	}
+}
+let saving = false;
+async function saveData() {
+	if (saving) return;
+	saving = true;
+	await saveDataInner().catch(showError);
+	saving = false;
+}
+let countries = `FWC	MEX	RSA	KOR	CZE	CAN	SUI	QAT	BIH	BRA	MAR	HAI	SCO	USA	PAR	AUS	TUR	GER	CUW	CIV	ECU	NED	JPN	TUN	SWE	BEL	EGY	IRN	NZL	ESP	CPV	KSA	URU	FRA	SEN	NOR	IRQ	ARG	ALG	AUT	JOR	POR	UZB	COL	COD	ENG	CRO	GHA	PAN`
+	.split('\t');
+let flags = ''.split(' ');
+countries.forEach(x => console.assert(x.length === 3));
+let stickerTemplate = document.getElementById('sticker-template').content.firstChild;
+function stickerAdd() {
+	if (this.parentElement.dataset.count < 100)
+		setCount(this.parentElement, Number(this.parentElement.dataset.count) + 1);
+}
+function stickerSub() {
+	if (this.parentElement.dataset.count > 0)
+		setCount(this.parentElement, this.parentElement.dataset.count - 1);
+}
+function makeSticker(number, name, count) {
+	let sticker = document.importNode(stickerTemplate, true);
+	sticker.dataset.startCount = count;
+	sticker.dataset.number = number;
+	sticker.querySelector('.sticker-name').append(name+'');
+	setCount(sticker, count);
+	sticker.querySelector('.add').addEventListener('click', stickerAdd);
+	sticker.querySelector('.sub').addEventListener('click', stickerSub);
+	return sticker;
+}
+function setCount(sticker, count) {
+	sticker.dataset.count = count;
+	if (!(getting || saving)) {
+		sticker.dataset.countSync = count;
+	}
+	let status = count <= 0 ? 'Missing' : count === 1 ? 'Have'
+		: `${count - 1} dupe${count > 2 ? 's' : ''}`;
+	sticker.querySelector('.sticker-status').textContent = status;
+}
+getData().then(data => {
+	let container = document.createElement('div');
+	let stickerNumber = 0;
+	for (let country of countries) {
+		let countrySection = document.createElement('div');
+		let countryHeader = document.createElement('h2');
+		countryHeader.append(country);
+		countrySection.append(countryHeader);
+		for (let i = 0; i < 20; i++) {
+			let name;
+			if (country === 'FWC') {
+				name = i === 0 ? '00' : i+'';
+			} else {
+				name = i + 1 + '';
+			}
+			countrySection.append(makeSticker(stickerNumber, name, data[stickerNumber]));
+			stickerNumber++;
+		}
+		container.append(countrySection);
+	}
+	document.getElementById('main').append(container);
+	document.getElementById('loading').remove();
+	setInterval(() => saveData(), SAVE_INTERVAL);
+});
+document.getElementById('logout-form').addEventListener('submit', e => {
+	e.preventDefault();
+	localStorage.removeItem('login');
+	location.href = 'index.html';
+});
+
+
+document.addEventListener('visibilitychange', async e => {
+  if (document.visibilityState === "hidden") {
+  	await saveData();
+	}
+});
+document.addEventListener('pagehide', async () => {
+  await saveData();
+});
+</script>
+</body>
