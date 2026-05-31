@@ -116,7 +116,7 @@ async function saveData() {
 }
 let countries = `FWC	MEX	RSA	KOR	CZE	CAN	SUI	QAT	BIH	BRA	MAR	HAI	SCO	USA	PAR	AUS	TUR	GER	CUW	CIV	ECU	NED	JPN	TUN	SWE	BEL	EGY	IRN	NZL	ESP	CPV	KSA	URU	FRA	SEN	NOR	IRQ	ARG	ALG	AUT	JOR	POR	UZB	COL	COD	ENG	CRO	GHA	PAN`
 	.split('\t');
-let flags = ''.split(' ');
+let flags = ''.split(' ');//TODO
 countries.forEach(x => console.assert(x.length === 3));
 let stickerTemplate = document.getElementById('sticker-template').content.firstChild;
 function stickerAdd() {
