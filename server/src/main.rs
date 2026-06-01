@@ -1,4 +1,3 @@
-#![allow(dead_code)] // TODO
 use std::error::Error;
 use std::process::ExitCode;
 use tokio_rusqlite::params;
@@ -81,10 +80,9 @@ impl Server {
 					stream.write_all(ERROR_INVALID_CHARS).await?;
 					return Ok(());
 				}
-				let length = password.chars().count();
-				if !(4..=100).contains(&length) {
+				if !(4..=240).contains(&password.len()) {
 					// client should have validated this
-					Err(format!("password must be 4-100 characters long (got {length})"))?
+					Err(format!("password must be 4-80 characters long"))?
 				}
 				if let Err(e) = self.create(password.to_owned()).await {
 					if let sqlite::Error::Error(rusqlite::Error::SqliteFailure(e, _)) = e

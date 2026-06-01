@@ -9,12 +9,12 @@
 </head>
 <body>
 	<script>if (localStorage.getItem('login')) { location.href = 'collection.html'; }</script>
-	<h2>Sticker album tracker</h2>
+	<h1>Sticker album tracker</h1>
 	<form id="login-form">
 		<p>
 			Log into an existing account:
 		</p>
-		<input type="text" id="login-id" maxlength="100" placeholder="Login ID">
+		<input type="text" id="login-id" maxlength="80" placeholder="Login ID">
 		<input type="submit" value="Login" id="login-button">
 		<p id="login-error" class="error"></p>
 	</form>
@@ -29,7 +29,7 @@
 			<li>Don't include private/personal information.</li>
 			<li>Don't make it too common/short, to stop other people from logging into your account by mistake.</li>
 		</ul>
-		<input type="text" id="register-id" maxlength="100" placeholder="Login ID">
+		<input type="text" id="register-id" maxlength="80" placeholder="Login ID">
 		<input type="submit" value="Register" id="register-button">
 		<p id="register-error" class="error"></p>
 	</form>
@@ -37,7 +37,7 @@
 'use strict';
 const SERVER_URL = 'https://stickeralbumsrv.pommicket.com';
 const MIN_LOGIN_LEN = 4;
-const MAX_LOGIN_LEN = 100;
+const MAX_LOGIN_LEN = 80;
 const LOGIN_LEN_ERROR = `Login ID must be ${MIN_LOGIN_LEN}-${MAX_LOGIN_LEN} characters long.`;
 const loginID = document.getElementById("login-id");
 const registerID = document.getElementById("register-id");

@@ -2,7 +2,7 @@ body{font-family: sans-serif;}
 .error{color: red}
 .sticker{
 	text-align: center;
-	border: 3px solid black;
+	border: 2px solid black;
 	display: inline-block;
 	margin: 2px;
 	padding: 2px;
@@ -29,13 +29,13 @@ body{font-family: sans-serif;}
 }
 .sticker button {
 	color: var(--color1);
-	border: 3px solid var(--color1);
+	border: 2px solid var(--color1);
 	background: var(--color2);
 	text-align: center;
 	vertical-align: middle;
 	width: 1.6em;
 	height: 1.6em;
-	border-radius: 4000px;
+	border-radius: 8px;
 	font-size: inherit;
 	&:hover {
 		background: var(--color3);
@@ -43,4 +43,16 @@ body{font-family: sans-serif;}
 	&:active {
 		background: var(--color4);
 	}
+}
+.page {
+	display: inline-block;
+	border: 3px solid black;
+	margin: 4px;
+}
+.rowRightAlign {
+	text-align: right;
+}
+.stickerTeam {
+	position: relative;
+	left: 3.25em;
 }

@@ -8,6 +8,7 @@
 	<link rel="stylesheet" href="main.css">
 </head>
 <body>
+	<h1>Sticker album tracker</h1>
 	<script>
 	const id = localStorage.getItem('login');
 	if (!id) { location.href = 'index.html'; }
@@ -151,22 +152,45 @@ getData().then(data => {
 	let container = document.createElement('div');
 	let stickerNumber = 0;
 	for (let country of countries) {
-		let countrySection = document.createElement('div');
-		let countryHeader = document.createElement('h2');
+		const isFWC = country === 'FWC';
+		const countrySection = document.createElement('div');
+		const countryHeader = document.createElement('h2');
 		countryHeader.append(country);
 		countrySection.append(countryHeader);
+		let pageContainer = document.createElement('div');
+		pageContainer.classList.add('page');
+		let rowContainer = pageContainer;
+		if (!isFWC) {
+			rowContainer = document.createElement('div');
+			rowContainer.classList.add('row');
+			rowContainer.classList.add('rowRightAlign');
+			pageContainer.append(rowContainer);
+		}
+		countrySection.append(pageContainer);
 		for (let i = 0; i < 20; i++) {
 			let name;
-			if (country === 'FWC') {
+			if (isFWC) {
 				name = i === 0 ? '00' : i+'';
 			} else {
 				name = i + 1 + '';
 			}
-			countrySection.append(makeSticker(stickerNumber, name, data[stickerNumber]));
-			// TODO: use inline-block page containers instead
-			if (i === 9 && !(window.visualViewport && visualViewport.width && visualViewport.height
-				&& visualViewport.width < visualViewport.height)) {
-				countrySection.append(document.createElement('br'));
+			let sticker = makeSticker(stickerNumber, name, data[stickerNumber]);
+			if (i === 12 && !isFWC) {
+				sticker.classList.add('stickerTeam');
+			}
+			rowContainer.append(sticker);
+			if (!isFWC && i === 9) {
+				pageContainer = document.createElement('div');
+				pageContainer.classList.add('page');
+				countrySection.append(pageContainer);
+			}
+			if (!isFWC && [1, 5, 9, 12, 16].includes(i)) {
+				rowContainer = document.createElement('div');
+				rowContainer.classList.add('row');
+				if (i === 16) {
+					rowContainer.classList.add('rowRightAlign');
+				}
+				pageContainer.append(rowContainer);
 			}
 			stickerNumber++;
 		}
