@@ -8,7 +8,7 @@
 	<link rel="stylesheet" href="main.css">
 </head>
 <body>
-	<h1>Sticker album tracker</h1>
+	<h1>Sticker album tracker<span id="total-total"></span></h1>
 	<script>
 	const id = localStorage.getItem('login');
 	if (!id) { location.href = 'index.html'; }
@@ -76,6 +76,9 @@ function updateData(newData) {
 		setCount(sticker, newCount);
 		sticker.dataset.startCount = count; // NOT newCount
 	}
+	for (let country of document.querySelectorAll('.country')) {
+		updateTotal(country);
+	}
 }
 async function saveDataInner() {
 	const changes = [];
@@ -116,18 +119,105 @@ async function saveData() {
 	await saveDataInner().catch(showError);
 	saving = false;
 }
-let countries = `FWC	MEX	RSA	KOR	CZE	CAN	BIH	QAT	SUI	BRA	MAR	HAI	SCO	USA	PAR	AUS	TUR	GER	CUW	CIV	ECU	NED	JPN	SWE	TUN	BEL	EGY	IRN	NZL	ESP	CPV	KSA	URU	FRA	SEN	IRQ	NOR	ARG	ALG	AUT	JOR	POR	COD	UZB	COL	ENG	CRO	GHA	PAN`
+const countries = (() => {
+let countryIDs = `FWC	MEX	RSA	KOR	CZE	CAN	BIH	QAT	SUI	BRA	MAR	HAI	SCO	USA	PAR	AUS	TUR	GER	CUW	CIV	ECU	NED	JPN	SWE	TUN	BEL	EGY	IRN	NZL	ESP	CPV	KSA	URU	FRA	SEN	IRQ	NOR	ARG	ALG	AUT	JOR	POR	COD	UZB	COL	ENG	CRO	GHA	PAN`
 	.split('\t');
-let flags = ''.split(' ');//TODO
-countries.forEach(x => console.assert(x.length === 3));
+let countryInfo = `⚽ Special
+🇲🇽 Mexico
+🇿🇦 South Africa
+🇰🇷 South Korea
+🇨🇿 Czechia
+🇨🇦 Canada
+🇧🇦 Bosnia & Herzegovina
+🇶🇦 Qatar
+🇨🇭 Switzerland
+🇧🇷 Brazil
+🇲🇦 Morocco
+🇭🇹 Haiti
+🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland
+🇺🇸 United States of America
+🇵🇾 Paraguay
+🇦🇺 Australia
+🇹🇷 Türkiye
+🇩🇪 Germany
+🇨🇼 Curaçao
+🇨🇮 Côte d’Ivoire
+🇪🇨 Ecuador
+🇳🇱 Netherlands
+🇯🇵 Japan
+🇸🇪 Sweden
+🇹🇳 Tunisia
+🇧🇪 Belgium
+🇪🇬 Egypt
+🇮🇷 Iran
+🇳🇿 New Zealand
+🇪🇸 Spain
+🇨🇻 Cabo Verde
+🇸🇦 Saudi Arabia
+🇺🇾 Uruguay
+🇫🇷 France
+🇸🇳 Senegal
+🇮🇶 Iraq
+🇳🇴 Norway
+🇦🇷 Argentina
+🇩🇿 Algeria
+🇦🇹 Austria
+🇯🇴 Jordan
+🇵🇹 Portugal
+🇨🇩 Democratic Republic of the Congo
+🇺🇿 Uzbekitan
+🇨🇴 Colombia
+🏴󠁧󠁢󠁥󠁮󠁧󠁿 England
+🇭🇷 Croatia
+🇬🇭 Ghana
+🇵🇦 Panama`.split('\n');
+countryIDs.forEach(x => console.assert(x.length === 3));
+console.assert(countryInfo.length == countryIDs.length);
+let countries = [];
+for (let i = 0; i < countryInfo.length; i++) {
+	let info = countryInfo[i];
+	let id = countryIDs[i];
+	const space = info.indexOf(' ');
+	countries.push({
+		id,
+		emoji: info.substring(0, space),
+		name: info.substring(space + 1)
+	});
+}
+return Object.freeze(countries);
+})();
+
 let stickerTemplate = document.getElementById('sticker-template').content.firstChild;
+function updateTotal(elem) {
+	while (!elem.classList.contains('country')) {
+		elem = elem.parentElement;
+	}
+	let total = 0;
+	for (let sticker of elem.querySelectorAll('.sticker')) {
+		total += sticker.dataset.count > 0;
+	}
+	elem.querySelector('.countryCount').textContent = total;
+	let totalTotal = 0;
+	let rootContainer = elem;
+	while (rootContainer.id !== 'sticker-container') {
+		rootContainer = rootContainer.parentElement;
+	}
+	for (let country of rootContainer.querySelectorAll('.country')) {
+		totalTotal += Number(country.querySelector('.countryCount').textContent);
+	}
+	if (!isNaN(totalTotal)) {
+		document.getElementById('total-total').textContent = ' — ' + totalTotal + '/980';
+	}
+}
 function stickerAdd() {
 	if (this.parentElement.dataset.count < 100)
 		setCount(this.parentElement, Number(this.parentElement.dataset.count) + 1);
+	updateTotal(this);
 }
 function stickerSub() {
 	if (this.parentElement.dataset.count > 0)
 		setCount(this.parentElement, this.parentElement.dataset.count - 1);
+	updateTotal(this);
 }
 function makeSticker(number, name, count) {
 	let sticker = document.importNode(stickerTemplate, true);
@@ -149,30 +239,35 @@ function setCount(sticker, count) {
 	sticker.querySelector('.sticker-status').textContent = status;
 }
 getData().then(data => {
-	let container = document.createElement('div');
+	const container = document.createElement('div');
+	container.id = 'sticker-container';
 	let stickerNumber = 0;
-	for (let country of countries) {
-		const isFWC = country === 'FWC';
+	for (const country of countries) {
+		const isFWC = country.id === 'FWC';
 		const countrySection = document.createElement('div');
+		countrySection.classList.add('country');
 		const countryHeader = document.createElement('h2');
-		countryHeader.append(country);
+		const countryCount = document.createElement('span');
+		countryCount.classList.add('countryCount');
+		countryHeader.append(country.emoji, country.id, ' — ', country.name, ' (', countryCount, '/20)');
 		countrySection.append(countryHeader);
 		let pageContainer = document.createElement('div');
 		pageContainer.classList.add('page');
 		let rowContainer = pageContainer;
+		rowContainer = document.createElement('div');
+		rowContainer.classList.add('row');
 		if (!isFWC) {
-			rowContainer = document.createElement('div');
-			rowContainer.classList.add('row');
 			rowContainer.classList.add('rowRightAlign');
-			pageContainer.append(rowContainer);
 		}
+		pageContainer.append(rowContainer);
 		countrySection.append(pageContainer);
 		for (let i = 0; i < 20; i++) {
 			let name;
 			if (isFWC) {
 				name = i === 0 ? '00' : i+'';
 			} else {
-				name = i + 1 + '';
+				let special = i === 0 ? '⚜️' : i === 12 ? '👥' : '';
+				name = special + (i + 1) + '';
 			}
 			let sticker = makeSticker(stickerNumber, name, data[stickerNumber]);
 			if (i === 12 && !isFWC) {
@@ -184,10 +279,10 @@ getData().then(data => {
 				pageContainer.classList.add('page');
 				countrySection.append(pageContainer);
 			}
-			if (!isFWC && [1, 5, 9, 12, 16].includes(i)) {
+			if ((isFWC ? [3, 7, 11, 15] : [1, 5, 9, 12, 16]).includes(i)) {
 				rowContainer = document.createElement('div');
 				rowContainer.classList.add('row');
-				if (i === 16) {
+				if (!isFWC && i === 16) {
 					rowContainer.classList.add('rowRightAlign');
 				}
 				pageContainer.append(rowContainer);
@@ -195,6 +290,7 @@ getData().then(data => {
 			stickerNumber++;
 		}
 		container.append(countrySection);
+		updateTotal(countrySection);
 	}
 	document.getElementById('main').append(container);
 	document.getElementById('loading').remove();

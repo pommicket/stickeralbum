@@ -1,4 +1,11 @@
-body{font-family: sans-serif;}
+body{
+	font-family: sans-serif;
+	--sticker-size: 7em;
+	margin: min(16px, 1em);
+}
+input[type="submit"] {
+	font-size: 150%;
+}
 .error{color: red}
 .sticker{
 	text-align: center;
@@ -7,7 +14,6 @@ body{font-family: sans-serif;}
 	margin: 2px;
 	padding: 2px;
 	font-size: 150%;
-	min-width: 6.5em;
 }
 .sticker .add {
 	--color1: green;
@@ -33,26 +39,36 @@ body{font-family: sans-serif;}
 	background: var(--color2);
 	text-align: center;
 	vertical-align: middle;
-	width: 1.6em;
-	height: 1.6em;
-	border-radius: 8px;
-	font-size: inherit;
-	&:hover {
-		background: var(--color3);
-	}
-	&:active {
-		background: var(--color4);
-	}
+	width: 2em;
+	font-weight: bold;
+	height: 1.7em;
+	padding: 0.1em;
+	font-size: 120%;
+}
+.sticker button:hover {
+	background: var(--color3);
+}
+.sticker button:active {
+	background: var(--color4);
 }
 .page {
 	display: inline-block;
 	border: 3px solid black;
-	margin: 4px;
+	margin: 4px 0;
+	width: 100%;
+	max-width: 60em;
+	box-sizing: border-box;
+	text-align: center;
+}
+.row {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr 1fr;
+	width: 100%;
 }
 .rowRightAlign {
 	text-align: right;
 }
 .stickerTeam {
 	position: relative;
-	left: 3.25em;
+	left: calc(var(--sticker-size) / 2);
 }
