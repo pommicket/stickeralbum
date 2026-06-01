@@ -23,6 +23,7 @@
 	<div id="error" class="error"></div>
 	<div id="main"></div>
 <script>
+'use strict';
 const SERVER_URL = 'https://stickeralbumsrv.pommicket.com';
 const SAVE_INTERVAL = 5000;
 let errorTimeout;
@@ -114,7 +115,7 @@ async function saveData() {
 	await saveDataInner().catch(showError);
 	saving = false;
 }
-let countries = `FWC	MEX	RSA	KOR	CZE	CAN	SUI	QAT	BIH	BRA	MAR	HAI	SCO	USA	PAR	AUS	TUR	GER	CUW	CIV	ECU	NED	JPN	TUN	SWE	BEL	EGY	IRN	NZL	ESP	CPV	KSA	URU	FRA	SEN	NOR	IRQ	ARG	ALG	AUT	JOR	POR	UZB	COL	COD	ENG	CRO	GHA	PAN`
+let countries = `FWC	MEX	RSA	KOR	CZE	CAN	BIH	QAT	SUI	BRA	MAR	HAI	SCO	USA	PAR	AUS	TUR	GER	CUW	CIV	ECU	NED	JPN	SWE	TUN	BEL	EGY	IRN	NZL	ESP	CPV	KSA	URU	FRA	SEN	IRQ	NOR	ARG	ALG	AUT	JOR	POR	COD	UZB	COL	ENG	CRO	GHA	PAN`
 	.split('\t');
 let flags = ''.split(' ');//TODO
 countries.forEach(x => console.assert(x.length === 3));
@@ -162,6 +163,11 @@ getData().then(data => {
 				name = i + 1 + '';
 			}
 			countrySection.append(makeSticker(stickerNumber, name, data[stickerNumber]));
+			// TODO: use inline-block page containers instead
+			if (i === 9 && !(window.visualViewport && visualViewport.width && visualViewport.height
+				&& visualViewport.width < visualViewport.height)) {
+				countrySection.append(document.createElement('br'));
+			}
 			stickerNumber++;
 		}
 		container.append(countrySection);
