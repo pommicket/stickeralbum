@@ -1,19 +1,28 @@
-body{
+body {
 	font-family: sans-serif;
 	--sticker-size: 7em;
 	margin: min(16px, 1em);
 }
-input[type="submit"] {
-	font-size: 150%;
+@media (orientation: portrait) {
+	body {
+		margin: 2px;
+	}
 }
-.error{color: red}
+.error {
+	color: red;
+	font-weight: bold;
+}
+.floating-error {
+	position: fixed;
+	background: white;
+	top: 0;
+}
 .sticker{
 	text-align: center;
 	border: 2px solid black;
 	display: inline-block;
 	margin: 2px;
 	padding: 2px;
-	font-size: 150%;
 }
 .sticker .add {
 	--color1: green;
@@ -43,7 +52,9 @@ input[type="submit"] {
 	font-weight: bold;
 	height: 1.7em;
 	padding: 0.1em;
-	font-size: 120%;
+	font-size: 100%;
+	max-width: 40%;
+	box-sizing: border-box;
 }
 .sticker button:hover {
 	background: var(--color3);
@@ -54,9 +65,9 @@ input[type="submit"] {
 .page {
 	display: inline-block;
 	border: 3px solid black;
-	margin: 4px 0;
-	width: 100%;
-	max-width: 60em;
+	margin: 4px;
+	width: calc(100% - 8px);
+	max-width: 35em;
 	box-sizing: border-box;
 	text-align: center;
 }
@@ -68,7 +79,37 @@ input[type="submit"] {
 .rowRightAlign {
 	text-align: right;
 }
-.stickerTeam {
+.row:has(.stickerTeam) {
+	grid-template-columns: 1fr 1fr 2fr;
+}
+.row:has(.emblem) {
+	grid-template-columns: 1.5fr 1fr 1.5fr;
+}
+#logout-form {
+	margin: 0 2em;
+	display: inline-block;
+}
+.copy-container {
 	position: relative;
-	left: calc(var(--sticker-size) / 2);
+}
+.copy-popup {
+	position: absolute;
+	background: white;
+	color: black;
+	opacity: 0.8;
+	left: 0;
+	top: 0;
+}
+@media print {
+	#share-link, #columns-label, #back-link {
+		display: none;
+	}
+}
+#list {
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	width: 100%;
+}
+.dup-count {
+	font-size: 85%;
 }

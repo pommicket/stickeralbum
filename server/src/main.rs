@@ -14,30 +14,43 @@ const BAD_REQUEST: &[u8] = b"HTTP/1.1 400 Bad request\r\nConnection: Close\r\nCo
 const ERROR_ACCOUNT_NOT_FOUND: &[u8] = b"HTTP/1.1 404 Not found\r\nConnection: Close\r\nContent-Type: text/plain\r\n\r\nAccount not found.\n";
 const ERROR_INVALID_CHARS: &[u8] = b"HTTP/1.1 400 Bad request\r\nConnection: Close\r\nContent-Type: text/plain\r\n\r\nID contains invalid charcaters.\n";
 const ERROR_EXISTS: &[u8] = b"HTTP/1.1 400 Bad request\r\nConnection: Close\r\nContent-Type: text/plain\r\n\r\nAccount with this ID already exists (probably).\n";
-const OK_OK: &[u8] = b"HTTP/1.1 200 OK\r\nConnection: Close\r\nContent-Type: text/plain\r\n\r\nOK\n";
+//const OK_OK: &[u8] = b"HTTP/1.1 200 OK\r\nConnection: Close\r\nContent-Type: text/plain\r\n\r\nOK\n";
 const OK_EMPTY: &[u8] = b"HTTP/1.1 200 OK\r\nConnection: Close\r\nContent-Type: text/plain\r\n\r\n";
 const STICKER_COUNT: usize = 980;
+const PUBLIC_ID_LEN: usize = 12;
 // timeout for all requests
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 
+fn is_user_not_found_error<T>(r: &sqlite::Result<T>) -> bool {
+	matches!(r, Err(sqlite::Error::Error(rusqlite::Error::QueryReturnedNoRows)))
+}
+async fn write_ok_with_data(stream: &mut tokio::net::TcpStream, data: &[u8]) -> std::io::Result<()> {
+	let mut request = vec![0; OK_EMPTY.len() + data.len()];
+	request[..OK_EMPTY.len()].copy_from_slice(&OK_EMPTY);
+	request[OK_EMPTY.len()..].copy_from_slice(data);
+	stream.write_all(&request).await?;
+	Ok(())
+}
+
 impl Server {
-	async fn create(&self, password: String) -> sqlite::Result<()> {
+	async fn create(&self, password: String) -> sqlite::Result<String> {
 		let new_data = vec![0u8; STICKER_COUNT];
-		let mut public_id = vec![0u8; 12];
+		let mut public_id = vec![0u8; PUBLIC_ID_LEN];
 		getrandom::fill(&mut public_id)
 			.map_err(|_| sqlite::Error::ConnectionClosed)?;
 		const CODING: &[u8; 32] = b"abcdefghjkmnpqrstuvwxyz123456789";
 		for byte in public_id.iter_mut() {
 			*byte = CODING[usize::from(*byte & 31)];
 		}
+		let public_id_string = String::from_utf8(public_id.clone()).unwrap();
 		self.db.call(move |conn| {
 			conn.execute("INSERT INTO users VALUES (?, ?, ?)",
 				params![password, public_id, new_data])
 		}).await?;
-		Ok(())
+		Ok(public_id_string)
 		
 	}
-	async fn read(&self, password: String) -> sqlite::Result<Vec<u8>> {
+	async fn read_by_password(&self, password: String) -> sqlite::Result<Vec<u8>> {
 		let result: Vec<u8> = self.db.call(move |conn| {
 			conn.query_row("SELECT data FROM users WHERE password = ?", [password], |row| Ok(row.get(0)))
 		}).await??;
@@ -46,13 +59,30 @@ impl Server {
 		}
 		Ok(result)
 	}
-	async fn write(&self, password: String, data: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
-		let result = self.db.call(move |conn| -> sqlite::Result<Vec<u8>> {
+	async fn read_by_id(&self, id: String) -> sqlite::Result<Vec<u8>> {
+		let result: Vec<u8> = self.db.call(move |conn| {
+			conn.query_row("SELECT data FROM users WHERE publicId = ?", [id.as_bytes()], |row| Ok(row.get(0)))
+		}).await??;
+		if result.len() != STICKER_COUNT {
+			return Err(sqlite::Error::ConnectionClosed);
+		}
+		Ok(result)
+	}
+	async fn write(&self, password: String, data: Vec<u8>) -> sqlite::Result<Vec<u8>> {
+		self.db.call(move |conn| {
 			conn.execute("UPDATE users SET data = ? WHERE password = ?",
 				params![&data, password])?;
 			Ok(data)
-		}).await?;
-		Ok(result)
+		}).await
+	}
+	async fn get_public_id(&self, password: String) -> sqlite::Result<String> {
+		let result: Vec<u8> = self.db.call(move |conn| {
+			conn.query_row("SELECT publicId FROM users WHERE password = ?", [password], |row| Ok(row.get(0)))
+		}).await??;
+		if result.len() != PUBLIC_ID_LEN {
+			return Err(sqlite::Error::ConnectionClosed);
+		}
+		String::from_utf8(result).map_err(|_| sqlite::Error::ConnectionClosed)
 	}
 	async fn try_handle_connection(&self, stream: &mut tokio::net::TcpStream) -> Result<(), Box<dyn Error>> {
 		let mut data = [0; 4096];
@@ -73,7 +103,7 @@ impl Server {
 			Err("no request body")?;
 		}
 		match body[0] {
-			b'c' => {
+			b'c' => { // create account
 				let password = std::str::from_utf8(&body[1..])
 					.map_err(|_| "password contains invalid UTF-8")?;
 				if password.bytes().any(|c| c.is_ascii_control()) {
@@ -84,30 +114,51 @@ impl Server {
 					// client should have validated this
 					Err(format!("password must be 4-80 characters long"))?
 				}
-				if let Err(e) = self.create(password.to_owned()).await {
-					if let sqlite::Error::Error(rusqlite::Error::SqliteFailure(e, _)) = e
-						&& e.code == rusqlite::ErrorCode::ConstraintViolation {
-						stream.write_all(ERROR_EXISTS).await?;
-						return Ok(())
-					} else {
-						Err(e)?;
+				let public_id = match self.create(password.to_owned()).await {
+					Err(e) => {
+						return if let sqlite::Error::Error(rusqlite::Error::SqliteFailure(e, _)) = e
+							&& e.code == rusqlite::ErrorCode::ConstraintViolation {
+							stream.write_all(ERROR_EXISTS).await?;
+							Ok(())
+						} else {
+							Err(e.into())
+						}
 					}
-				}
-				stream.write_all(OK_OK).await?;
+					Ok(data) => data
+				};
+				write_ok_with_data(stream, public_id.as_bytes()).await?;
 			}
-			b'r' => {
+			b'r' => { // legacy read by password
 				let password = std::str::from_utf8(&body[1..])
 					.map_err(|_| "password contains invalid UTF-8")?;
-				let data = self.read(password.to_owned()).await;
-				if matches!(data, Err(sqlite::Error::Error(rusqlite::Error::QueryReturnedNoRows))) {
+				let data = self.read_by_password(password.to_owned()).await;
+				if is_user_not_found_error(&data) {
 					stream.write_all(ERROR_ACCOUNT_NOT_FOUND).await?;
 					return Ok(());
 				}
-				let data = data?;
-				stream.write_all(OK_EMPTY).await?;
-				stream.write_all(&data).await?;
+				write_ok_with_data(stream, &data?).await?;
 			}
-			b'w' => {
+			b'l' => { // login
+				let password = std::str::from_utf8(&body[1..])
+					.map_err(|_| "password contains invalid UTF-8")?;
+				let data = self.get_public_id(password.to_owned()).await;
+				if is_user_not_found_error(&data) {
+					stream.write_all(ERROR_ACCOUNT_NOT_FOUND).await?;
+					return Ok(());
+				}
+				write_ok_with_data(stream, data?.as_bytes()).await?;
+			}
+			b'R' => { // read by public ID
+				let id = std::str::from_utf8(&body[1..])
+					.map_err(|_| "public ID contains invalid UTF-8")?;
+				let data = self.read_by_id(id.to_owned()).await;
+				if is_user_not_found_error(&data) {
+					stream.write_all(ERROR_ACCOUNT_NOT_FOUND).await?;
+					return Ok(());
+				}
+				write_ok_with_data(stream, &data?).await?;
+			}
+			b'w' => { // write
 				let sep = body.iter().position(|&c| c == 0x01)
 					.ok_or_else(|| "bad format for w command")?;
 				let password = std::str::from_utf8(&body[1..sep])
@@ -116,7 +167,7 @@ impl Server {
 				if updates.len() % 3 != 0 || updates.len() > STICKER_COUNT * 3 {
 					Err(format!("bad data length: {}", updates.len()))?;
 				}
-				let mut data = self.read(password.to_owned()).await?;
+				let mut data = self.read_by_password(password.to_owned()).await?;
 				for chunk in updates.chunks(3) {
 					let [sticker_lo, sticker_hi, delta] = chunk else {
 						panic!("wtf")
@@ -136,8 +187,7 @@ impl Server {
 					} 
 				}
 				let data = self.write(password.to_owned(), data).await?;
-				stream.write_all(OK_EMPTY).await?;
-				stream.write_all(&data).await?;
+				write_ok_with_data(stream, &data).await?;
 			}
 			_ => {
 				Err("bad format")?;

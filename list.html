@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Sticker album tracker</title>
+	<link rel="icon" href="icon.png">
+	<meta content="width=device-width,initial-scale=1" name="viewport">
+	<link rel="stylesheet" href="main.css?v1=1">
+</head>
+<body>
+	<a id="back-link" href="collection.html" hidden>↩ Back to my collection</a>
+	<h1></h1>
+	<p id="share-link" hidden>Share with others (updates automatically!): <a href="#"></a> <span class="copy-container"><button>📋 Copy link to clipboard</button></span></p>
+	<label id="columns-label" value="6">Columns: <input type="number" min="1" max="20" value="6" id="columns"></label>
+	<div id="list">Loading...</div>
+	<p class="error" id="error"></p>
+	<script>
+let searchParams = new URLSearchParams(location.search);
+document.querySelector('h1').textContent = searchParams.has('missing') ? 'Missing:' :
+	searchParams.has('duplicates') ? 'Duplicates:' : (location.href = '404.html');
+const columnInput = document.getElementById('columns');
+const listContainer = document.getElementById('list');
+function updateColumns() {
+	let columnCount = columnInput.valueAsNumber;
+	if (columnCount <= 0 || isNaN(columnCount)) return;
+	columnCount = Math.min(columnCount, 20);
+	listContainer.style.gridTemplateColumns = `repeat(${columnCount}, 1fr)`;
+}
+updateColumns();
+columnInput.addEventListener('input', updateColumns);
+const shareLink = document.getElementById('share-link');
+if (localStorage.getItem('login')) {
+	document.getElementById('back-link').hidden = false;
+	shareLink.hidden = false;
+	const hashless = new URL(location);
+	hashless.hash = '';
+	shareLink.querySelector('a').textContent = hashless;
+	const buttonContainer = shareLink.querySelector('.copy-container');
+	const button = shareLink.querySelector('button');
+	button.onclick = async () => {
+		await navigator.clipboard.writeText(hashless);
+		const popup = document.createElement('span');
+		popup.textContent = 'Copied!';
+		popup.classList.add('copy-popup');
+		buttonContainer.append(popup);
+		setTimeout(() => {
+			popup.remove();
+			button.disabled = false;
+		}, 2000);
+	};
+}
+</script>
+	<script type="module" src="list.js"></script>
+</body>
