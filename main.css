@@ -8,6 +8,9 @@ body {
 		margin: 2px;
 	}
 }
+label {
+	white-space: nowrap;
+}
 .error {
 	color: red;
 	font-weight: bold;
