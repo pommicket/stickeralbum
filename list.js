@@ -1,4 +1,4 @@
-import { readRequest, formatResponseError, STICKERS_PER_COUNTRY, COUNTRY_IDS, getSortInversePermutation, stickerCode } from "./common.js";
+import { readRequest, formatResponseError, STICKERS_PER_COUNTRY, COUNTRY_IDS, getSortInversePermutation, stickerCode } from "./common.js?v2";
 // show "just missing" / "just duplicates"
 const publicID = searchParams.get('missing') || searchParams.get('duplicates');
 if (!publicID) location.href = '404.html';

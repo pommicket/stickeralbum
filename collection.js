@@ -1,4 +1,4 @@
-import { loginRequest, readRequest, writeRequest, formatResponseError, stickerName, COUNTRY_IDS, getSortPermutation } from "./common.js";
+import { loginRequest, readRequest, writeRequest, formatResponseError, stickerName, COUNTRY_IDS, getSortPermutation } from "./common.js?v2";
 
 
 const SAVE_INTERVAL = 5000;
