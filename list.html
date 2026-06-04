@@ -28,7 +28,7 @@ function updateColumns() {
 	let columnCount = columnInput.valueAsNumber;
 	if (columnCount <= 0 || isNaN(columnCount)) return;
 	columnCount = Math.min(columnCount, 20);
-	listContainer.style.gridTemplateColumns = `repeat(${columnCount}, 1fr)`;
+	listContainer.style.columns = columnCount;
 }
 updateColumns();
 columnInput.addEventListener('input', updateColumns);
