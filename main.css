@@ -86,7 +86,7 @@ body {
 	grid-template-columns: 1.5fr 1fr 1.5fr;
 }
 #logout-form {
-	margin: 0 2em;
+	margin: 0 0.5em;
 	display: inline-block;
 }
 .copy-container {
@@ -100,15 +100,22 @@ body {
 	left: 0;
 	top: 0;
 }
-@media print {
-	#share-link, #columns-label, #back-link {
-		display: none;
-	}
-}
 #list {
 	display: grid;
 	grid-template-columns: repeat(6, 1fr);
 	width: 100%;
+	margin-top: 1em;
+}
+@media print {
+	#list {
+		margin: 0;
+	}
+	h1 {
+		margin: 8px 0;
+	}
+	#list-controls, #back-link {
+		display: none;
+	}
 }
 .dup-count {
 	font-size: 85%;

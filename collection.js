@@ -1,9 +1,10 @@
-import { loginRequest, readRequest, writeRequest, formatResponseError, stickerName, COUNTRY_IDS } from "./common.js";
+import { loginRequest, readRequest, writeRequest, formatResponseError, stickerName, COUNTRY_IDS, getSortPermutation } from "./common.js";
 
 
 const SAVE_INTERVAL = 5000;
 let errorTimeout;
 let publicID;
+const sortBySelect = document.getElementById('sort-by');
 
 function showError(e) {
 	document.getElementById('error').textContent = e;
@@ -139,6 +140,7 @@ for (let i = 0; i < countryInfo.length; i++) {
 	let id = COUNTRY_IDS[i];
 	const space = info.indexOf(' ');
 	countries.push({
+		index: i,
 		id,
 		emoji: info.substring(0, space),
 		name: info.substring(space + 1)
@@ -198,6 +200,31 @@ function setCount(sticker, count) {
 		: `${count - 1} dupe${count > 2 ? 's' : ''}`;
 	sticker.querySelector('.sticker-status').textContent = status;
 }
+let currSortType = 'album';
+function updateCountries() {
+	let stickerContainer = document.getElementById('sticker-container');
+	if (!stickerContainer) {
+		return;
+	}
+	let sortType = sortBySelect.value;
+	if (!sortType || sortType === currSortType) {
+		return;
+	}
+	let countryElements = [];
+	for (const country of document.querySelectorAll('.country')) {
+		country.remove();
+		countryElements.push(country);
+	}
+	countryElements.sort((a, b) => {
+		let aIndex = Number(a.dataset.countryIndex);
+		let bIndex = Number(b.dataset.countryIndex);
+		return getSortPermutation(sortType, aIndex) - getSortPermutation(sortType, bIndex);
+	});
+	for (let country of countryElements) {
+		stickerContainer.append(country);
+	}
+	currSortType = sortType;
+}
 
 // for legacy connections
 async function getPublicID() {
@@ -223,6 +250,7 @@ getPublicID().then(() => getData()).then(data => {
 		const isFWC = country.id === 'FWC';
 		const countrySection = document.createElement('div');
 		countrySection.classList.add('country');
+		countrySection.dataset.countryIndex = country.index;
 		const countryHeader = document.createElement('h2');
 		const countryCount = document.createElement('span');
 		countryCount.classList.add('countryCount');
@@ -270,9 +298,11 @@ getPublicID().then(() => getData()).then(data => {
 		updateTotal(countrySection);
 	}
 	document.getElementById('main').append(container);
+	updateCountries();
+	sortBySelect.addEventListener('change', () => updateCountries());
 	document.getElementById('loading').remove();
 	setInterval(() => saveData(), SAVE_INTERVAL);
-	document.addEventListener('visibilitychange', async e => {
+	document.addEventListener('visibilitychange', async () => {
 		if (document.visibilityState === "hidden") {
 	  		await saveData();
 		}
