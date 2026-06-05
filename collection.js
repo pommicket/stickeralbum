@@ -5,6 +5,7 @@ const SAVE_INTERVAL = 5000;
 let errorTimeout;
 let publicID;
 const sortBySelect = document.getElementById('sort-by');
+const searchInput = document.getElementById('search-input');
 
 function showError(e) {
 	document.getElementById('error').textContent = e;
@@ -200,14 +201,15 @@ function setCount(sticker, count) {
 		: `${count - 1} dupe${count > 2 ? 's' : ''}`;
 	sticker.querySelector('.sticker-status').textContent = status;
 }
-let currSortType = 'album';
+let currSortType, currSearchTerm;
 function updateCountries() {
 	let stickerContainer = document.getElementById('sticker-container');
 	if (!stickerContainer) {
 		return;
 	}
 	let sortType = sortBySelect.value;
-	if (!sortType || sortType === currSortType) {
+	let searchTerm = searchInput.value.toLowerCase();
+	if (sortType === currSortType && searchTerm == currSearchTerm) {
 		return;
 	}
 	let countryElements = [];
@@ -221,9 +223,11 @@ function updateCountries() {
 		return getSortPermutation(sortType, aIndex) - getSortPermutation(sortType, bIndex);
 	});
 	for (let country of countryElements) {
+		country.hidden = searchTerm && !country.querySelector('h2').textContent.toLowerCase().includes(searchTerm);
 		stickerContainer.append(country);
 	}
 	currSortType = sortType;
+	currSearchTerm = searchTerm;
 }
 
 // for legacy connections
@@ -323,3 +327,4 @@ document.getElementById('show-missing').addEventListener('click', () => {
 document.getElementById('show-dupes').addEventListener('click', () => {
 	location.href = `list.html?duplicates=${publicID}`;
 });
+searchInput.addEventListener('input', () => updateCountries());

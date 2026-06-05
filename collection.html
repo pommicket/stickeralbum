@@ -16,7 +16,10 @@
 	<button id="show-missing">Just show missing (printable)</button>
 	<button id="show-dupes">Just show duplicates (printable)</button>
 	<label style="margin-left: 0.5em;">Sort by <select id="sort-by"><option value="album">album order</option><option value="alphabetical">alphabetical order</option></select></label>
-	<form id="logout-form"><input type="submit" value="❌ Log out"></form>
+	<form id="logout-form"><input type="submit" value="❌ Log out"></form><br>
+	<search style="margin:6px;">
+		<label>🔍 Search <input type="text" autocomplete="off" id="search-input"></label>
+	</search>
 	<template id="sticker-template"><div class="sticker"><b
 			class="sticker-name"></b>: <span class="sticker-status"></span><br>
 			<button class="add">+</button>
@@ -26,5 +29,5 @@
 	<p id="loading">Loading...</p>
 	<p id="error" class="error floating-error"></p>
 	<div id="main"></div>
-	<script src="collection.js?v2" type="module"></script>
+	<script src="collection.js?v3" type="module"></script>
 </body>
