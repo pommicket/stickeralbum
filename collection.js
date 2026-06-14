@@ -27,8 +27,7 @@ async function getDataInner() {
 	if (!response.ok) {
 		throw await formatResponseError(response);
 	}
-	let bytes = await response.bytes();
-	return bytes;
+	return await response.bytes();
 }
 let getting = false;
 async function getData() {

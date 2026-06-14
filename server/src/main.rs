@@ -65,10 +65,10 @@ impl Server {
 				conn.query_row(
 					"SELECT data FROM users WHERE password = ?",
 					[password],
-					|row| Ok(row.get(0)),
+					|row| row.get(0),
 				)
 			})
-			.await??;
+			.await?;
 		if result.len() != STICKER_COUNT {
 			return Err(sqlite::Error::ConnectionClosed);
 		}
@@ -81,10 +81,10 @@ impl Server {
 				conn.query_row(
 					"SELECT data FROM users WHERE publicId = ?",
 					[id.as_bytes()],
-					|row| Ok(row.get(0)),
+					|row| row.get(0),
 				)
 			})
-			.await??;
+			.await?;
 		if result.len() != STICKER_COUNT {
 			return Err(sqlite::Error::ConnectionClosed);
 		}
@@ -108,10 +108,10 @@ impl Server {
 				conn.query_row(
 					"SELECT publicId FROM users WHERE password = ?",
 					[password],
-					|row| Ok(row.get(0)),
+					|row| row.get(0),
 				)
 			})
-			.await??;
+			.await?;
 		if result.len() != PUBLIC_ID_LEN {
 			return Err(sqlite::Error::ConnectionClosed);
 		}
