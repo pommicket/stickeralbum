@@ -1,1 +1,0 @@
-- change Access-Control-Allow-Origin
