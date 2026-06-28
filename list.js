@@ -26,7 +26,7 @@ readRequest(publicID).then(async response => {
 					teamContainer.append(', ');
 				}
 				first = false;
-				teamContainer.append(stickerName(country, s));
+				teamContainer.append(stickerName(COUNTRY_IDS[country], s));
 				if (n > 2) {
 					let dupCount = document.createElement('span');
 					dupCount.classList.add('dup-count');

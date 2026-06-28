@@ -264,11 +264,13 @@ getPublicID().then(() => getData()).then(data => {
 		let rowContainer = pageContainer;
 		rowContainer = document.createElement('div');
 		rowContainer.classList.add('row');
+		let rowOffset;
 		if (!isFWC) {
-			rowContainer.classList.add('rowRightAlign');
+			rowOffset = 2;
 		}
 		pageContainer.append(rowContainer);
 		countrySection.append(pageContainer);
+		let rowStart = 0;
 		for (let i = 0; i < 20; i++) {
 			let name = stickerName(country.id, i);
 			if (!isFWC) {
@@ -276,6 +278,9 @@ getPublicID().then(() => getData()).then(data => {
 				name = special + name;
 			}
 			let sticker = makeSticker(stickerNumber, name, data[stickerNumber]);
+			if (rowOffset !== undefined) {
+				sticker.style.gridColumn = rowOffset + (i - rowStart) + 1;
+			}
 			if (i === 12 && !isFWC) {
 				sticker.classList.add('stickerTeam');
 			} else if (i === 0 && !isFWC) {
@@ -290,9 +295,11 @@ getPublicID().then(() => getData()).then(data => {
 			if ((isFWC ? [3, 7, 11, 15] : [1, 5, 9, 12, 16]).includes(i)) {
 				rowContainer = document.createElement('div');
 				rowContainer.classList.add('row');
+				rowOffset = undefined;
 				if (!isFWC && i === 16) {
-					rowContainer.classList.add('rowRightAlign');
+					rowOffset = 1;
 				}
+				rowStart = i + 1;
 				pageContainer.append(rowContainer);
 			}
 			stickerNumber++;
