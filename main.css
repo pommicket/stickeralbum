@@ -85,6 +85,9 @@ label {
 .row:has(.stickerTeam) {
 	grid-template-columns: 1fr 1fr 2fr;
 }
+.row:has(.emblem) {
+	grid-template-columns: 1fr 0.7fr 1.3fr 1fr;
+}
 #logout-form {
 	margin: 0 0.5em;
 	display: inline-block;
