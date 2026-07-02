@@ -1,4 +1,4 @@
-import { loginRequest, readRequest, writeRequest, formatResponseError, stickerName, COUNTRY_IDS, getSortPermutation } from "./common.js?v2";
+import { loginRequest, readRequest, writeRequestV2, formatResponseError, stickerName, COUNTRY_IDS, getSortPermutation } from "./common.js?v3";
 
 
 const SAVE_INTERVAL = 5000;
@@ -60,13 +60,13 @@ async function saveDataInner() {
 		let id = Number(sticker.dataset.number);
 		let delta = sticker.dataset.countSync - sticker.dataset.startCount;
 		if (delta) {
-			changes.push(id & 255, id >> 8, delta & 0xff);
+			changes.push(id & 0x3f, id >> 6, delta & 0xff);
 		}
 	}
 	if (changes.length === 0) {
 		return;
 	}
-	let response = await writeRequest(id, changes);
+	let response = await writeRequestV2(id, changes);
 	if (response.ok) {
 		let bytes = await response.bytes();
 		saving = false;

@@ -232,7 +232,42 @@ impl Server {
 					} else if new_value > 254 {
 						Err(format!("invalid data byte: {new_value}"))?;
 					} else {
-						data[sticker] = new_value as u8;
+						data[sticker] = new_value.clamp(0, 99) as u8;
+					}
+				}
+				let data = self.write(password.to_owned(), data).await?;
+				write_ok_with_data(stream, &data).await?;
+			}
+			b'W' => {
+				// write (fixed)
+				let sep = body
+					.iter()
+					.position(|&c| c == 0x01)
+					.ok_or("bad format for w command")?;
+				let password = std::str::from_utf8(&body[1..sep])
+					.map_err(|_| "password contains invalid UTF-8")?;
+				let updates = &body[sep + 1..];
+				if updates.len() % 3 != 0 || updates.len() > STICKER_COUNT * 3 {
+					Err(format!("bad data length: {}", updates.len()))?;
+				}
+				let mut data = self.read_by_password(password.to_owned()).await?;
+				for chunk in updates.chunks(3) {
+					let [sticker_lo, sticker_hi, delta] = chunk else {
+						panic!("wtf")
+					};
+					let sticker =
+						usize::from(u16::from(*sticker_lo) + u16::from(*sticker_hi) * 0x40);
+					if sticker >= STICKER_COUNT {
+						Err(format!("bad sticker ID: {sticker}"))?;
+					}
+					let delta: i8 = delta.cast_signed();
+					let new_value = i32::from(delta) + i32::from(data[sticker]);
+					if new_value < 0 {
+						data[sticker] = 0;
+					} else if new_value > 254 {
+						Err(format!("invalid data byte: {new_value}"))?;
+					} else {
+						data[sticker] = new_value.clamp(0, 99) as u8;
 					}
 				}
 				let data = self.write(password.to_owned(), data).await?;

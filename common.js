@@ -30,10 +30,10 @@ export function readRequest(publicID) {
 }
 
 /// Construct write-sticker-data fetch request
-export function writeRequest(id, data) {
+export function writeRequestV2(id, data) {
 	const utf8 = textEncoder.encode(id);
 	const body = new Uint8Array(utf8.length + data.length + 3);
-	body[0] = 'w'.charCodeAt(0);
+	body[0] = 'W'.charCodeAt(0);
 	body.set(utf8, 1);
 	body.set([1], utf8.length + 1);
 	body.set(data, utf8.length + 2);
