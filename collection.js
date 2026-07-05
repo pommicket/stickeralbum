@@ -126,7 +126,7 @@ let countryInfo = `⚽ Special
 🇯🇴 Jordan
 🇵🇹 Portugal
 🇨🇩 Democratic Republic of the Congo
-🇺🇿 Uzbekitan
+🇺🇿 Uzbekistan
 🇨🇴 Colombia
 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England
 🇭🇷 Croatia
